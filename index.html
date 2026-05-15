@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f7f8fb">
+  <title>網紅邀約文案產生器</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f7f8fb;
+      --panel: #ffffff;
+      --panel-soft: #f1f5f9;
+      --ink: #18212f;
+      --muted: #64748b;
+      --line: #dbe3ee;
+      --teal: #0f766e;
+      --teal-dark: #115e59;
+      --blue: #1d4ed8;
+      --rose: #be123c;
+      --amber: #b45309;
+      --shadow: 0 18px 48px rgba(15, 23, 42, .09);
+      --radius: 8px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      min-height: 100%;
+      background: var(--bg);
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "Noto Sans JP", "Noto Sans KR", "Noto Sans", sans-serif;
+      line-height: 1.55;
+      letter-spacing: 0;
+      background:
+        linear-gradient(180deg, #f7f8fb 0, #edf3f7 340px, #f7f8fb 900px),
+        var(--bg);
+    }
+
+    button,
+    input,
+    textarea,
+    select {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: .55;
+    }
+
+    .shell {
+      width: min(1180px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 24px 0 44px;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(25px, 4vw, 38px);
+      line-height: 1.08;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 36px;
+      padding: 7px 12px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, .78);
+      color: var(--muted);
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(280px, 380px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .95);
+      box-shadow: var(--shadow);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-title {
+      margin: 0;
+      font-size: 17px;
+      line-height: 1.2;
+    }
+
+    .panel-body {
+      padding: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .field:last-child {
+      margin-bottom: 0;
+    }
+
+    label,
+    .label {
+      color: #334155;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: var(--radius);
+      background: #fff;
+      color: var(--ink);
+      outline: none;
+      transition: border-color .16s ease, box-shadow .16s ease, background .16s ease;
+    }
+
+    input,
+    select {
+      min-height: 44px;
+      padding: 9px 11px;
+    }
+
+    textarea {
+      min-height: 154px;
+      padding: 11px;
+      resize: vertical;
+    }
+
+    input:focus,
+    textarea:focus,
+    select:focus {
+      border-color: var(--teal);
+      box-shadow: 0 0 0 3px rgba(15, 118, 110, .14);
+    }
+
+    .hint {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .language-card {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #dbeafe;
+      border-radius: var(--radius);
+      background: #eff6ff;
+    }
+
+    .language-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .detected {
+      color: var(--blue);
+      font-size: 18px;
+      font-weight: 800;
+    }
+
+    .small-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      min-height: 38px;
+      padding: 9px 13px;
+      border-radius: var(--radius);
+      background: var(--panel-soft);
+      color: #1f2937;
+      font-weight: 800;
+      line-height: 1.15;
+      transition: transform .16s ease, background .16s ease, color .16s ease, box-shadow .16s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(15, 23, 42, .08);
+    }
+
+    .btn.primary {
+      background: var(--teal);
+      color: #fff;
+    }
+
+    .btn.primary:hover {
+      background: var(--teal-dark);
+    }
+
+    .btn.danger {
+      background: #fff1f2;
+      color: var(--rose);
+    }
+
+    .btn.warning {
+      background: #fff7ed;
+      color: var(--amber);
+    }
+
+    .btn.ghost {
+      background: transparent;
+      color: var(--muted);
+      box-shadow: inset 0 0 0 1px var(--line);
+    }
+
+    .copy-all {
+      white-space: nowrap;
+    }
+
+    .results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .result-card,
+    .template-card {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .result-head,
+    .template-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      background: #f8fafc;
+    }
+
+    .result-title,
+    .template-title {
+      min-width: 0;
+      font-size: 16px;
+      font-weight: 900;
+      overflow-wrap: anywhere;
+    }
+
+    .result-text {
+      margin: 0;
+      min-height: 104px;
+      padding: 14px;
+      color: #1f2937;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .empty-state {
+      display: grid;
+      gap: 10px;
+      padding: 24px;
+      border: 1px dashed #b6c2cf;
+      border-radius: var(--radius);
+      background: rgba(255, 255, 255, .72);
+      color: var(--muted);
+      text-align: center;
+    }
+
+    .settings {
+      margin-top: 16px;
+    }
+
+    .settings-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .template-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .template-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 24px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      background: #ecfeff;
+      color: #0e7490;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .tag.off {
+      background: #f1f5f9;
+      color: #64748b;
+    }
+
+    .template-preview {
+      margin: 0;
+      padding: 12px 14px;
+      color: #334155;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .template-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      padding: 0 14px 14px;
+    }
+
+    .io-box {
+      display: grid;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--line);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 22px;
+      z-index: 30;
+      max-width: min(520px, calc(100% - 32px));
+      padding: 11px 14px;
+      border-radius: var(--radius);
+      background: #0f172a;
+      color: #fff;
+      box-shadow: 0 14px 40px rgba(15, 23, 42, .22);
+      opacity: 0;
+      pointer-events: none;
+      transform: translate(-50%, 14px);
+      transition: opacity .2s ease, transform .2s ease;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, 0);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    @media (max-width: 900px) {
+      .layout,
+      .settings-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel.sticky {
+        position: static;
+      }
+    }
+
+    @media (min-width: 901px) {
+      .panel.sticky {
+        position: sticky;
+        top: 16px;
+      }
+    }
+
+    @media (max-width: 620px) {
+      .shell {
+        width: min(100% - 20px, 1180px);
+        padding: 14px 0 32px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .status-pill {
+        white-space: normal;
+      }
+
+      .panel-header,
+      .panel-body {
+        padding: 14px;
+      }
+
+      .small-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .result-head,
+      .template-head {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .toolbar {
+        justify-content: flex-start;
+      }
+
+      .btn {
+        flex: 1 1 auto;
+      }
+
+      .copy-all {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand">
+        <h1>網紅邀約文案產生器</h1>
+        <p class="subtitle">輸入名稱，自動套入你設定好的互惠版、付費版或其他文案。</p>
+      </div>
+      <div class="status-pill" id="saveStatus" aria-live="polite">設定存在這台裝置</div>
+    </header>
+
+    <section class="layout" aria-label="文案產生器">
+      <aside class="panel sticky">
+        <div class="panel-header">
+          <h2 class="panel-title">輸入資料</h2>
+        </div>
+        <div class="panel-body">
+          <div class="field">
+            <label for="influencerName">網紅名稱</label>
+            <input id="influencerName" type="text" autocomplete="off" placeholder="例如：嘿嘿、Aiko、민지">
+            <p class="hint">文案中的 <strong>{name}</strong> 會換成這裡輸入的名稱。</p>
+          </div>
+
+          <div class="field">
+            <div class="language-card">
+              <div class="language-row">
+                <span class="label">偵測語言</span>
+                <span class="detected" id="detectedLabel">中文</span>
+              </div>
+              <p class="hint" id="detectHint">依名稱文字判斷；英文名或羅馬拼音可能需要手動指定。</p>
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="languageOverride">文案語言</label>
+            <select id="languageOverride"></select>
+          </div>
+
+          <div class="actions">
+            <button class="btn primary copy-all" id="copyAllBtn" type="button">複製全部文案</button>
+            <button class="btn ghost" id="clearNameBtn" type="button">清空名稱</button>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2 class="panel-title">產生結果</h2>
+          <div class="template-meta" id="resultMeta"></div>
+        </div>
+        <div class="panel-body">
+          <div class="results" id="results"></div>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel settings" aria-label="文案設定">
+      <div class="panel-header">
+        <h2 class="panel-title">文案設定</h2>
+        <div class="toolbar">
+          <button class="btn warning" id="resetDefaultsBtn" type="button">重設預設</button>
+        </div>
+      </div>
+      <div class="panel-body">
+        <div class="settings-grid">
+          <form id="templateForm" autocomplete="off">
+            <input id="editingId" type="hidden">
+            <div class="field">
+              <label for="templateTitle">文案名稱</label>
+              <input id="templateTitle" type="text" placeholder="例如：互惠版、付費版、二次追蹤">
+            </div>
+            <div class="small-grid">
+              <div class="field">
+                <label for="templateLanguage">套用語言</label>
+                <select id="templateLanguage"></select>
+              </div>
+              <div class="field">
+                <label for="templateActive">狀態</label>
+                <select id="templateActive">
+                  <option value="true">啟用</option>
+                  <option value="false">暫停</option>
+                </select>
+              </div>
+            </div>
+            <div class="field">
+              <label for="templateBody">文案內容</label>
+              <textarea id="templateBody" placeholder="嗨 {name}～&#10;想邀請你合作..."></textarea>
+              <p class="hint">可使用 <strong>{name}</strong> 當名稱佔位符；沒有放也可以儲存。</p>
+            </div>
+            <div class="actions">
+              <button class="btn primary" id="saveTemplateBtn" type="submit">新增文案</button>
+              <button class="btn ghost" id="cancelEditBtn" type="button" hidden>取消編輯</button>
+              <button class="btn" id="insertNameBtn" type="button">插入 {name}</button>
+            </div>
+
+            <div class="io-box">
+              <div class="field">
+                <label for="settingsJson">設定匯入/匯出</label>
+                <textarea id="settingsJson" placeholder="按「匯出設定」後可複製到另一台裝置，再貼上按「匯入設定」。"></textarea>
+              </div>
+              <div class="actions">
+                <button class="btn" id="exportBtn" type="button">匯出設定</button>
+                <button class="btn" id="importBtn" type="button">匯入設定</button>
+              </div>
+            </div>
+          </form>
+
+          <div>
+            <div class="template-list" id="templateList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const STORAGE_KEY = "influencer-outreach-tool.templates.v1";
+
+    const LANGUAGES = [
+      { code: "auto", label: "自動偵測" },
+      { code: "all", label: "通用" },
+      { code: "zh", label: "中文" },
+      { code: "en", label: "英文" },
+      { code: "ja", label: "日文" },
+      { code: "ko", label: "韓文" },
+      { code: "th", label: "泰文" },
+      { code: "vi", label: "越南文" },
+      { code: "id", label: "印尼文" },
+      { code: "es", label: "西班牙文" },
+      { code: "fr", label: "法文" },
+      { code: "de", label: "德文" },
+      { code: "ar", label: "阿拉伯文" },
+      { code: "ru", label: "俄文" }
+    ];
+
+    const TEMPLATE_LANGUAGES = LANGUAGES.filter((language) => language.code !== "auto");
+
+    const DEFAULT_TEMPLATES = [
+      {
+        id: "default-zh-gifted",
+        title: "互惠版",
+        language: "zh",
+        active: true,
+        body: "嗨 {name}～\n\n我們很喜歡你的內容風格，想邀請你體驗我們的產品並分享真實心得。這次合作會提供產品作為互惠，希望能用自然、不硬推的方式讓你的粉絲認識我們。\n\n如果你有興趣，我可以再把合作細節和產品資訊傳給你，謝謝！"
+      },
+      {
+        id: "default-zh-paid",
+        title: "付費版",
+        language: "zh",
+        active: true,
+        body: "嗨 {name}～\n\n我們正在尋找適合的創作者合作，很喜歡你的內容調性，想邀請你進行付費合作。希望你能以自己的風格介紹我們的產品，合作形式、時程和報價都可以再一起討論。\n\n如果方便的話，想請你提供合作報價或媒體包，謝謝！"
+      },
+      {
+        id: "default-en-gifted",
+        title: "Gifted Collaboration",
+        language: "en",
+        active: true,
+        body: "Hi {name},\n\nWe really like your content style and would love to invite you to try our product. This would be a gifted collaboration, and we hope you can share your honest experience in your own voice.\n\nIf you are interested, I can send over the product details. Thank you!"
+      },
+      {
+        id: "default-en-paid",
+        title: "Paid Collaboration",
+        language: "en",
+        active: true,
+        body: "Hi {name},\n\nWe are looking for creators who match our brand, and we would love to discuss a paid collaboration with you. We are open to your usual content format, timeline, and rate.\n\nIf you are interested, could you please share your media kit or rate card? Thank you!"
+      }
+    ];
+
+    const state = {
+      templates: [],
+      detectedLanguage: "zh",
+      manualLanguage: "auto"
+    };
+
+    const els = {
+      influencerName: document.querySelector("#influencerName"),
+      detectedLabel: document.querySelector("#detectedLabel"),
+      detectHint: document.querySelector("#detectHint"),
+      languageOverride: document.querySelector("#languageOverride"),
+      resultMeta: document.querySelector("#resultMeta"),
+      results: document.querySelector("#results"),
+      copyAllBtn: document.querySelector("#copyAllBtn"),
+      clearNameBtn: document.querySelector("#clearNameBtn"),
+      saveStatus: document.querySelector("#saveStatus"),
+      templateForm: document.querySelector("#templateForm"),
+      editingId: document.querySelector("#editingId"),
+      templateTitle: document.querySelector("#templateTitle"),
+      templateLanguage: document.querySelector("#templateLanguage"),
+      templateActive: document.querySelector("#templateActive"),
+      templateBody: document.querySelector("#templateBody"),
+      saveTemplateBtn: document.querySelector("#saveTemplateBtn"),
+      cancelEditBtn: document.querySelector("#cancelEditBtn"),
+      insertNameBtn: document.querySelector("#insertNameBtn"),
+      resetDefaultsBtn: document.querySelector("#resetDefaultsBtn"),
+      templateList: document.querySelector("#templateList"),
+      settingsJson: document.querySelector("#settingsJson"),
+      exportBtn: document.querySelector("#exportBtn"),
+      importBtn: document.querySelector("#importBtn"),
+      toast: document.querySelector("#toast")
+    };
+
+    function uid() {
+      if (crypto && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return `template-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+    }
+
+    function languageLabel(code) {
+      return (LANGUAGES.find((language) => language.code === code) || LANGUAGES[0]).label;
+    }
+
+    function getEffectiveLanguage() {
+      return state.manualLanguage === "auto" ? state.detectedLanguage : state.manualLanguage;
+    }
+
+    function detectLanguage(value) {
+      const text = value.trim();
+      if (!text) return "zh";
+      if (/[\u3040-\u30ff]/u.test(text)) return "ja";
+      if (/[\uac00-\ud7af]/u.test(text)) return "ko";
+      if (/[\u4e00-\u9fff]/u.test(text)) return "zh";
+      if (/[\u0e00-\u0e7f]/u.test(text)) return "th";
+      if (/[\u0600-\u06ff]/u.test(text)) return "ar";
+      if (/[\u0400-\u04ff]/u.test(text)) return "ru";
+      if (/[ăâêôơưđĂÂÊÔƠƯĐáàảãạấầẩẫậắằẳẵặéèẻẽẹếềểễệíìỉĩịóòỏõọốồổỗộớờởỡợúùủũụứừửữựýỳỷỹỵ]/u.test(text)) return "vi";
+      if (/[ñáéíóúü¡¿]/iu.test(text)) return "es";
+      if (/[àâæçéèêëîïôœùûüÿ]/iu.test(text)) return "fr";
+      if (/[äöüß]/iu.test(text)) return "de";
+      return "en";
+    }
+
+    function normalizeTemplates(value) {
+      if (!Array.isArray(value)) return cloneDefaults();
+      return value
+        .filter((item) => item && typeof item.title === "string" && typeof item.body === "string")
+        .map((item) => ({
+          id: item.id || uid(),
+          title: item.title.trim() || "未命名文案",
+          language: TEMPLATE_LANGUAGES.some((language) => language.code === item.language) ? item.language : "all",
+          active: item.active !== false,
+          body: item.body
+        }));
+    }
+
+    function cloneDefaults() {
+      return DEFAULT_TEMPLATES.map((template) => ({ ...template, id: template.id }));
+    }
+
+    function loadTemplates() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        state.templates = raw ? normalizeTemplates(JSON.parse(raw)) : cloneDefaults();
+      } catch (error) {
+        state.templates = cloneDefaults();
+      }
+    }
+
+    function saveTemplates() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state.templates));
+      els.saveStatus.textContent = `已儲存 ${state.templates.length} 個文案`;
+    }
+
+    async function copyText(text, successMessage) {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(text);
+        } else {
+          const helper = document.createElement("textarea");
+          helper.value = text;
+          helper.setAttribute("readonly", "");
+          helper.className = "sr-only";
+          document.body.appendChild(helper);
+          helper.select();
+          document.execCommand("copy");
+          helper.remove();
+        }
+        showToast(successMessage || "已複製");
+      } catch (error) {
+        showToast("複製失敗，請手動選取文案");
+      }
+    }
+
+    function showToast(message) {
+      els.toast.textContent = message;
+      els.toast.classList.add("show");
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        els.toast.classList.remove("show");
+      }, 1800);
+    }
+
+    function fillLanguageOptions() {
+      els.languageOverride.innerHTML = LANGUAGES
+        .filter((language) => language.code !== "all")
+        .map((language) => `<option value="${language.code}">${language.label}</option>`)
+        .join("");
+
+      els.templateLanguage.innerHTML = TEMPLATE_LANGUAGES
+        .map((language) => `<option value="${language.code}">${language.label}</option>`)
+        .join("");
+    }
+
+    function templateToText(template, name) {
+      const safeName = name.trim() || "嘿嘿";
+      return template.body.replaceAll("{name}", safeName);
+    }
+
+    function getVisibleTemplates() {
+      const activeLanguage = getEffectiveLanguage();
+      return state.templates.filter((template) => {
+        if (!template.active) return false;
+        return template.language === "all" || template.language === activeLanguage;
+      });
+    }
+
+    function renderResults() {
+      const name = els.influencerName.value;
+      state.detectedLanguage = detectLanguage(name);
+      const activeLanguage = getEffectiveLanguage();
+      const activeTemplates = getVisibleTemplates();
+
+      els.detectedLabel.textContent = languageLabel(state.detectedLanguage);
+      els.detectHint.textContent = activeLanguage === state.detectedLanguage
+        ? "依名稱文字判斷；英文名或羅馬拼音可能需要手動指定。"
+        : `目前手動指定為${languageLabel(activeLanguage)}。`;
+      els.resultMeta.innerHTML = `
+        <span class="tag">${languageLabel(activeLanguage)}</span>
+        <span class="tag">${activeTemplates.length} 個文案</span>
+      `;
+      els.copyAllBtn.disabled = activeTemplates.length === 0;
+
+      if (activeTemplates.length === 0) {
+        els.results.innerHTML = `
+          <div class="empty-state">
+            <strong>這個語言目前沒有啟用中的文案</strong>
+            <span>到下方設定新增文案，或把文案語言設為「通用」。</span>
+          </div>
+        `;
+        return;
+      }
+
+      els.results.innerHTML = activeTemplates.map((template) => `
+        <article class="result-card">
+          <div class="result-head">
+            <div class="result-title">${escapeHtml(template.title)}</div>
+            <button class="btn primary" type="button" data-copy-result="${template.id}">複製</button>
+          </div>
+          <p class="result-text">${escapeHtml(templateToText(template, name))}</p>
+        </article>
+      `).join("");
+    }
+
+    function renderTemplateList() {
+      if (state.templates.length === 0) {
+        els.templateList.innerHTML = `
+          <div class="empty-state">
+            <strong>還沒有文案</strong>
+            <span>先新增一個文案，產生結果就會出現在上方。</span>
+          </div>
+        `;
+        return;
+      }
+
+      els.templateList.innerHTML = state.templates.map((template) => `
+        <article class="template-card">
+          <div class="template-head">
+            <div>
+              <div class="template-title">${escapeHtml(template.title)}</div>
+              <div class="template-meta">
+                <span class="tag">${languageLabel(template.language)}</span>
+                <span class="tag ${template.active ? "" : "off"}">${template.active ? "啟用" : "暫停"}</span>
+              </div>
+            </div>
+          </div>
+          <p class="template-preview">${escapeHtml(template.body)}</p>
+          <div class="template-actions">
+            <button class="btn" type="button" data-edit-template="${template.id}">編輯</button>
+            <button class="btn ghost" type="button" data-toggle-template="${template.id}">${template.active ? "暫停" : "啟用"}</button>
+            <button class="btn danger" type="button" data-delete-template="${template.id}">刪除</button>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    function renderAll() {
+      renderResults();
+      renderTemplateList();
+    }
+
+    function escapeHtml(value) {
+      return value
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+    }
+
+    function resetForm() {
+      els.editingId.value = "";
+      els.templateTitle.value = "";
+      els.templateLanguage.value = getEffectiveLanguage();
+      if (!TEMPLATE_LANGUAGES.some((language) => language.code === els.templateLanguage.value)) {
+        els.templateLanguage.value = "all";
+      }
+      els.templateActive.value = "true";
+      els.templateBody.value = "";
+      els.saveTemplateBtn.textContent = "新增文案";
+      els.cancelEditBtn.hidden = true;
+    }
+
+    function handleSaveTemplate(event) {
+      event.preventDefault();
+      const title = els.templateTitle.value.trim();
+      const body = els.templateBody.value.trim();
+      if (!title || !body) {
+        showToast("請填寫文案名稱和內容");
+        return;
+      }
+
+      const payload = {
+        title,
+        language: els.templateLanguage.value,
+        active: els.templateActive.value === "true",
+        body
+      };
+
+      const editingId = els.editingId.value;
+      if (editingId) {
+        state.templates = state.templates.map((template) => (
+          template.id === editingId ? { ...template, ...payload } : template
+        ));
+        showToast("文案已更新");
+      } else {
+        state.templates.unshift({ id: uid(), ...payload });
+        showToast("文案已新增");
+      }
+
+      saveTemplates();
+      resetForm();
+      renderAll();
+    }
+
+    function editTemplate(id) {
+      const template = state.templates.find((item) => item.id === id);
+      if (!template) return;
+      els.editingId.value = template.id;
+      els.templateTitle.value = template.title;
+      els.templateLanguage.value = template.language;
+      els.templateActive.value = String(template.active);
+      els.templateBody.value = template.body;
+      els.saveTemplateBtn.textContent = "更新文案";
+      els.cancelEditBtn.hidden = false;
+      els.templateTitle.focus();
+      showToast("正在編輯文案");
+    }
+
+    function toggleTemplate(id) {
+      state.templates = state.templates.map((template) => (
+        template.id === id ? { ...template, active: !template.active } : template
+      ));
+      saveTemplates();
+      renderAll();
+    }
+
+    function deleteTemplate(id) {
+      const template = state.templates.find((item) => item.id === id);
+      if (!template) return;
+      const ok = window.confirm(`確定要刪除「${template.title}」嗎？`);
+      if (!ok) return;
+      state.templates = state.templates.filter((item) => item.id !== id);
+      saveTemplates();
+      renderAll();
+      showToast("文案已刪除");
+    }
+
+    function insertAtCursor(textarea, value) {
+      const start = textarea.selectionStart || 0;
+      const end = textarea.selectionEnd || 0;
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      textarea.value = `${before}${value}${after}`;
+      textarea.focus();
+      textarea.selectionStart = textarea.selectionEnd = start + value.length;
+    }
+
+    function exportSettings() {
+      const json = JSON.stringify({ templates: state.templates }, null, 2);
+      els.settingsJson.value = json;
+      copyText(json, "設定 JSON 已複製");
+    }
+
+    function importSettings() {
+      try {
+        const parsed = JSON.parse(els.settingsJson.value);
+        const nextTemplates = normalizeTemplates(parsed.templates || parsed);
+        if (nextTemplates.length === 0) {
+          showToast("匯入內容沒有文案");
+          return;
+        }
+        state.templates = nextTemplates;
+        saveTemplates();
+        resetForm();
+        renderAll();
+        showToast("設定已匯入");
+      } catch (error) {
+        showToast("JSON 格式不正確");
+      }
+    }
+
+    function copyAllResults() {
+      const name = els.influencerName.value;
+      const text = getVisibleTemplates()
+        .map((template) => `${template.title}：\n\n${templateToText(template, name)}`)
+        .join("\n\n---\n\n");
+      copyText(text, "全部文案已複製");
+    }
+
+    function bindEvents() {
+      els.influencerName.addEventListener("input", renderResults);
+      els.languageOverride.addEventListener("change", () => {
+        state.manualLanguage = els.languageOverride.value;
+        resetForm();
+        renderResults();
+      });
+      els.clearNameBtn.addEventListener("click", () => {
+        els.influencerName.value = "";
+        els.influencerName.focus();
+        renderResults();
+      });
+      els.copyAllBtn.addEventListener("click", copyAllResults);
+      els.templateForm.addEventListener("submit", handleSaveTemplate);
+      els.cancelEditBtn.addEventListener("click", () => {
+        resetForm();
+        showToast("已取消編輯");
+      });
+      els.insertNameBtn.addEventListener("click", () => {
+        insertAtCursor(els.templateBody, "{name}");
+      });
+      els.resetDefaultsBtn.addEventListener("click", () => {
+        const ok = window.confirm("確定要重設成預設文案嗎？目前自訂文案會被覆蓋。");
+        if (!ok) return;
+        state.templates = cloneDefaults();
+        saveTemplates();
+        resetForm();
+        renderAll();
+        showToast("已重設預設文案");
+      });
+      els.exportBtn.addEventListener("click", exportSettings);
+      els.importBtn.addEventListener("click", importSettings);
+      els.results.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-copy-result]");
+        if (!button) return;
+        const template = state.templates.find((item) => item.id === button.dataset.copyResult);
+        if (!template) return;
+        copyText(templateToText(template, els.influencerName.value), `已複製「${template.title}」`);
+      });
+      els.templateList.addEventListener("click", (event) => {
+        const editButton = event.target.closest("[data-edit-template]");
+        const toggleButton = event.target.closest("[data-toggle-template]");
+        const deleteButton = event.target.closest("[data-delete-template]");
+        if (editButton) editTemplate(editButton.dataset.editTemplate);
+        if (toggleButton) toggleTemplate(toggleButton.dataset.toggleTemplate);
+        if (deleteButton) deleteTemplate(deleteButton.dataset.deleteTemplate);
+      });
+    }
+
+    function boot() {
+      fillLanguageOptions();
+      loadTemplates();
+      resetForm();
+      bindEvents();
+      renderAll();
+    }
+
+    boot();
+  </script>
+</body>
+</html>
