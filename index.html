@@ -405,6 +405,42 @@
       font-size: 13px;
     }
 
+    .sync-help {
+      margin-top: 12px;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .sync-help summary {
+      padding: 10px 12px;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 800;
+      list-style: none;
+    }
+
+    .sync-help summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .sync-help[open] summary {
+      border-bottom: 1px solid var(--line);
+    }
+
+    .sync-help-body {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+    }
+
+    .sync-code-input {
+      min-height: 84px;
+      font-size: 13px;
+    }
+
     .tag {
       display: inline-flex;
       align-items: center;
@@ -583,6 +619,18 @@
             <button class="btn" id="syncLinkBtn" type="button">複製同步連結</button>
             <button class="btn ghost" id="clearNameBtn" type="button">清空名稱</button>
           </div>
+
+          <details class="sync-help">
+            <summary>同步連結失敗時</summary>
+            <div class="sync-help-body">
+              <p class="hint">電腦按「複製同步碼」，手機打開普通網址後貼上，再按「匯入同步碼」。</p>
+              <textarea class="sync-code-input" id="syncCodeInput" placeholder="同步碼貼這裡"></textarea>
+              <div class="actions">
+                <button class="btn" id="copySyncCodeBtn" type="button">複製同步碼</button>
+                <button class="btn primary" id="importSyncCodeBtn" type="button">匯入同步碼</button>
+              </div>
+            </div>
+          </details>
         </div>
       </aside>
 
@@ -724,6 +772,9 @@
       results: document.querySelector("#results"),
       copyAllBtn: document.querySelector("#copyAllBtn"),
       syncLinkBtn: document.querySelector("#syncLinkBtn"),
+      syncCodeInput: document.querySelector("#syncCodeInput"),
+      copySyncCodeBtn: document.querySelector("#copySyncCodeBtn"),
+      importSyncCodeBtn: document.querySelector("#importSyncCodeBtn"),
       clearNameBtn: document.querySelector("#clearNameBtn"),
       saveStatus: document.querySelector("#saveStatus"),
       templateForm: document.querySelector("#templateForm"),
@@ -805,9 +856,7 @@
       els.saveStatus.textContent = `已儲存 ${state.templates.length} 個文案`;
     }
 
-    function encodePayload(payload) {
-      const json = JSON.stringify(payload);
-      const bytes = new TextEncoder().encode(json);
+    function toBase64Url(bytes) {
       let binary = "";
       bytes.forEach((byte) => {
         binary += String.fromCharCode(byte);
@@ -815,28 +864,67 @@
       return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
     }
 
-    function decodePayload(value) {
+    function fromBase64Url(value) {
       const base64 = value.replaceAll("-", "+").replaceAll("_", "/");
       const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=");
       const binary = atob(padded);
-      const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+      return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    }
+
+    async function compressText(text) {
+      if (!("CompressionStream" in window)) return "";
+      const stream = new Blob([text]).stream().pipeThrough(new CompressionStream("gzip"));
+      const buffer = await new Response(stream).arrayBuffer();
+      return toBase64Url(new Uint8Array(buffer));
+    }
+
+    async function decompressText(value) {
+      if (!("DecompressionStream" in window)) {
+        throw new Error("This browser cannot unzip sync data.");
+      }
+      const bytes = fromBase64Url(value);
+      const stream = new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return new Response(stream).text();
+    }
+
+    async function encodePayload(payload) {
+      const json = JSON.stringify(payload);
+      const compressed = await compressText(json);
+      if (compressed) return `z.${compressed}`;
+      const bytes = new TextEncoder().encode(json);
+      return `r.${toBase64Url(bytes)}`;
+    }
+
+    async function decodePayload(value) {
+      if (value.startsWith("z.")) {
+        return JSON.parse(await decompressText(value.slice(2)));
+      }
+
+      const rawValue = value.startsWith("r.") ? value.slice(2) : value;
+      const bytes = fromBase64Url(rawValue);
       return JSON.parse(new TextDecoder().decode(bytes));
     }
 
-    function applySyncFromUrl() {
+    async function applySyncValue(syncValue) {
+      const parsed = await decodePayload(syncValue.trim());
+      const nextTemplates = normalizeTemplates(parsed.templates || parsed);
+      if (nextTemplates.length === 0) {
+        throw new Error("No templates found.");
+      }
+      state.templates = nextTemplates;
+      saveTemplates();
+      return nextTemplates.length;
+    }
+
+    async function applySyncFromUrl() {
       const hash = window.location.hash || "";
       const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
       const syncValue = params.get("sync");
       if (!syncValue) return false;
 
       try {
-        const parsed = decodePayload(syncValue);
-        const nextTemplates = normalizeTemplates(parsed.templates || parsed);
-        if (nextTemplates.length > 0) {
-          state.templates = nextTemplates;
-          saveTemplates();
-          showToast("已同步文案到這台裝置");
-        }
+        await applySyncValue(syncValue);
+        showToast("已同步文案到這台裝置");
       } catch (error) {
         showToast("同步連結讀取失敗");
       } finally {
@@ -1075,10 +1163,37 @@
       copyText(json, "設定 JSON 已複製");
     }
 
-    function copySyncLink() {
-      const payload = encodePayload({ templates: state.templates });
+    async function getSyncPayload() {
+      return encodePayload({ templates: state.templates });
+    }
+
+    async function copySyncLink() {
+      const payload = await getSyncPayload();
       const link = `${window.location.origin}${window.location.pathname}#sync=${payload}`;
       copyText(link, "同步連結已複製，傳到手機打開即可");
+    }
+
+    async function copySyncCode() {
+      const payload = await getSyncPayload();
+      els.syncCodeInput.value = payload;
+      copyText(payload, "同步碼已複製");
+    }
+
+    async function importSyncCode() {
+      const value = els.syncCodeInput.value.trim();
+      if (!value) {
+        showToast("請先貼上同步碼");
+        return;
+      }
+
+      try {
+        const count = await applySyncValue(value);
+        resetForm();
+        renderAll();
+        showToast(`已匯入 ${count} 個文案`);
+      } catch (error) {
+        showToast("同步碼讀取失敗，請重新複製一次");
+      }
     }
 
     function importSettings() {
@@ -1121,6 +1236,8 @@
       });
       els.copyAllBtn.addEventListener("click", copyAllResults);
       els.syncLinkBtn.addEventListener("click", copySyncLink);
+      els.copySyncCodeBtn.addEventListener("click", copySyncCode);
+      els.importSyncCodeBtn.addEventListener("click", importSyncCode);
       els.templateForm.addEventListener("submit", handleSaveTemplate);
       els.cancelEditBtn.addEventListener("click", () => {
         resetForm();
@@ -1155,18 +1272,18 @@
         if (toggleButton) toggleTemplate(toggleButton.dataset.toggleTemplate);
         if (deleteButton) deleteTemplate(deleteButton.dataset.deleteTemplate);
       });
-      window.addEventListener("hashchange", () => {
-        if (applySyncFromUrl()) {
+      window.addEventListener("hashchange", async () => {
+        if (await applySyncFromUrl()) {
           resetForm();
           renderAll();
         }
       });
     }
 
-    function boot() {
+    async function boot() {
       fillLanguageOptions();
       loadTemplates();
-      applySyncFromUrl();
+      await applySyncFromUrl();
       resetForm();
       bindEvents();
       renderAll();
