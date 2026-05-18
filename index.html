@@ -700,7 +700,7 @@
           <details class="sync-help">
             <summary>同步連結失敗時</summary>
             <div class="sync-help-body">
-              <p class="hint">電腦按「複製同步碼」，手機打開普通網址後貼上，再按「匯入同步碼」。</p>
+              <p class="hint">電腦按「複製同步碼」，手機打開普通網址後貼上，再按「匯入同步碼」。新版同步碼會以 { 開頭。</p>
               <textarea class="sync-code-input" id="syncCodeInput" placeholder="同步碼貼這裡"></textarea>
               <div class="actions">
                 <button class="btn" id="copySyncCodeBtn" type="button">複製同步碼</button>
@@ -1028,7 +1028,10 @@
     }
 
     async function applySyncValue(syncValue) {
-      const parsed = await decodePayload(extractSyncValue(syncValue));
+      const trimmedValue = syncValue.trim();
+      const parsed = /^[{[]/u.test(trimmedValue)
+        ? JSON.parse(trimmedValue)
+        : await decodePayload(extractSyncValue(syncValue));
       const nextTemplates = normalizeTemplates(parsed.templates || parsed);
       if (nextTemplates.length === 0) {
         throw new Error("No templates found.");
@@ -1338,7 +1341,7 @@
     }
 
     async function copySyncCode() {
-      const payload = await getSyncPayload({ raw: true });
+      const payload = JSON.stringify({ templates: state.templates });
       els.syncCodeInput.value = payload;
       copyText(payload, "同步碼已複製");
     }
